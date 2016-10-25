@@ -1,0 +1,15 @@
+<% include ../partials/head %>
+	<main>
+		<div class="jumbotron">
+			<h1>This is great</h1>
+			<p>Welcome to templating using EJS</p>
+		</div>
+		<ul>
+			<% drinks.forEach(function(drink) { %>
+				<li><%= drink.name %> - <%= drink.drunkness %></li>
+			<% }); %>
+		</ul>
+	</main>
+
+<% include ../partials/footer %>
+	
