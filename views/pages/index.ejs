@@ -1,11 +1,21 @@
 <% include ../partials/head %>
 	<main>
-		<div class="jumbotron">
-			<h1>This is great</h1>
-			<p>Welcome to templating using EJS</p>
+		<div class="jumbotron" style="margin:20px">
+		<div class="row">
+		<% items.forEach(function(item) { %>
+			<div class="col-md-4">
+				<div class="thumbnail" style="margin:20px">
+					<img src="http://placehold.it/200x200/EEE" alt= <%= item.ItemName %>>
+					<div class="caption" align="center">
+						<h4 class=""><%= item.ItemName %></h4>
+						<p>$<%= item.Price %></p> 
+						<p class=""><%= item.Description %></p>  <a href="#" class="btn btn-default btn-xs" role="button">Add to Cart</a>
+					</div>
+				</div>
+			</div>
+		<% }); %>
 		</div>
-		<!-- <ul>
-		</ul> -->
+		</div>
 	</main>
 
 <% include ../partials/footer %>

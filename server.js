@@ -52,23 +52,87 @@ var Categories = Bookshelf.Collection.extend({
   model: Category
 });
 
+var selectedCategoryId = "";
+var categories = {};
 app.get('/', function(req, res) {
     //var decoded = jwt.verify(req.body.token, JWTKEY);
       //if(decoded) {
-        //knex.from('items')
-          //  .then(function (collection) {
-           //     res.render('pages/index', {error: false, collection});
-           // })
-            //.catch(function (err) {
-              //  res.status(500).json({error: true, data: {message: err.message}});
-            //});
+        knex.from('categories')
+          .then(function (categoriesCollection) {
+              knex.from('items')
+                .then(function (itemsCollection) {
+                  categories = categoriesCollection;
+                  res.render('pages/index', {error: false, items: itemsCollection, categories: categoriesCollection, categorySelected: 'None'});
+                })
+                .catch(function (err) {
+                  res.status(500).json({error: true, data: {message: err.message}});
+              });
+          })
+          .catch(function (err) {
+               
+          });
+        
         //  }else {
           //  res.json({error: true, data: {message: 'invalid token'}});
           //}
-    res.render('pages/index');
-
 });
 
+app.post('/getCategory', function(req, res) {
+    //  var decoded = jwt.verify(req.body.token, JWTKEY);
+    //   if(decoded) {
+        selectedCategoryId = req.body.categorySelectId;
+        if(selectedCategoryId == 'all') {
+          if(req.body.searchTerm == '') {
+            knex.from('items').innerJoin('itemCategory', 'items.ItemId', 'itemCategory.ItemId')
+              .then(function(categoryItems) {
+                  res.render('pages/index', {error: false, items: categoryItems, categories: categories, categorySelected: selectedCategoryId});
+              })
+              .catch(function (err){
+                  res.status(500).json({error: true, data: {message: err.message}});
+            })
+          }
+          else {
+            knex.from('items').innerJoin('itemCategory', 'items.ItemId', 'itemCategory.ItemId')
+              .where('ItemName', 'LIKE', req.body.searchTerm)
+              .then(function(categoryItems) {
+                  res.render('pages/index', {error: false, items: categoryItems, categories: categories, categorySelected: selectedCategoryId});
+              })
+              .catch(function (err){
+                  res.status(500).json({error: true, data: {message: err.message}});
+            })
+          }
+        }
+        else {
+          if(req.body.searchTerm == '') {
+            knex.from('items').innerJoin('itemCategory', 'items.ItemId', 'itemCategory.ItemId')
+              .where('CategoryId',selectedCategoryId)
+              .then(function(categoryItems) {
+                  res.render('pages/index', {error: false, items: categoryItems, categories: categories, categorySelected: selectedCategoryId});
+              })
+              .catch(function (err){
+                  res.status(500).json({error: true, data: {message: err.message}});
+            })
+          }
+          else {
+            knex.from('items').innerJoin('itemCategory', 'items.ItemId', 'itemCategory.ItemId')
+              .where('CategoryId',selectedCategoryId)
+              .andWhere('ItemName', 'LIKE', req.body.searchTerm)
+              .then(function(categoryItems) {
+                  res.render('pages/index', {error: false, items: categoryItems, categories: categories, categorySelected: selectedCategoryId});
+              })
+              .catch(function (err){
+                  res.status(500).json({error: true, data: {message: err.message}});
+            })
+          }
+        }
+         
+      // }else {
+      //   res.json({error: true, data: {message: 'invalid token'}});
+      // }
+      console.log('Came in!');
+      console.log(req.body);
+    
+});
 
 app.get('/about', function(req, res) {
     res.render('pages/about');
