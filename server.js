@@ -52,19 +52,21 @@ var Categories = Bookshelf.Collection.extend({
   model: Category
 });
 
-app.post('/', function(req, res) {
-    var decoded = jwt.verify(req.body.token, JWTKEY);
-      if(decoded) {
-        knex.from('items')
-            .then(function (collection) {
-                res.render('pages/index', {error: false, collection});
-            })
-            .catch(function (err) {
-                res.status(500).json({error: true, data: {message: err.message}});
-            });
-          }else {
-            res.json({error: true, data: {message: 'invalid token'}});
-          }
+app.get('/', function(req, res) {
+    //var decoded = jwt.verify(req.body.token, JWTKEY);
+      //if(decoded) {
+        //knex.from('items')
+          //  .then(function (collection) {
+           //     res.render('pages/index', {error: false, collection});
+           // })
+            //.catch(function (err) {
+              //  res.status(500).json({error: true, data: {message: err.message}});
+            //});
+        //  }else {
+          //  res.json({error: true, data: {message: 'invalid token'}});
+          //}
+    res.render('pages/index');
+
 });
 
 
