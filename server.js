@@ -15,6 +15,21 @@ var bodyParser = require('body-parser');
 var jwt    = require('jsonwebtoken');
 
 var app = express();
+
+app.use(require('morgan')('dev'));
+
+var session = require('express-session');
+
+var FileStore = require('session-file-store')(session);
+
+app.use(session({
+    name: 'server-session-cookie-id',
+    secret: 'catawba secret',
+    saveUninitialized: true,
+    resave: true,
+    store: new FileStore()
+}));
+
 var router = express.Router();
 
 var JWTKEY = 'CatawbaDatabase'; // Key for Json Web Token
@@ -52,16 +67,14 @@ var Categories = Bookshelf.Collection.extend({
   model: Category
 });
 
-var selectedCategoryId = "";
-var categories = {};
 app.get('/', function(req, res) {
     //var decoded = jwt.verify(req.body.token, JWTKEY);
       //if(decoded) {
         knex.from('categories')
           .then(function (categoriesCollection) {
+              req.session.categories = categoriesCollection;
               knex.from('items')
                 .then(function (itemsCollection) {
-                  categories = categoriesCollection;
                   res.render('pages/index', {error: false, items: itemsCollection, categories: categoriesCollection, categorySelected: 'None'});
                 })
                 .catch(function (err) {
@@ -69,7 +82,7 @@ app.get('/', function(req, res) {
               });
           })
           .catch(function (err) {
-               
+              res.status(500).json({error: true, data: {message: err.message}});
           });
         
         //  }else {
@@ -80,12 +93,12 @@ app.get('/', function(req, res) {
 app.post('/getCategory', function(req, res) {
     //  var decoded = jwt.verify(req.body.token, JWTKEY);
     //   if(decoded) {
-        selectedCategoryId = req.body.categorySelectId;
-        if(selectedCategoryId == 'all') {
+        req.session.selectedCategoryId = req.body.categorySelectId;
+        if(req.session.selectedCategoryId == 'all') {
           if(req.body.searchTerm == '') {
             knex.from('items').innerJoin('itemCategory', 'items.ItemId', 'itemCategory.ItemId')
               .then(function(categoryItems) {
-                  res.render('pages/index', {error: false, items: categoryItems, categories: categories, categorySelected: selectedCategoryId});
+                  res.render('pages/index', {error: false, items: categoryItems, categories: req.session.categories, categorySelected: req.session.selectedCategoryId});
               })
               .catch(function (err){
                   res.status(500).json({error: true, data: {message: err.message}});
@@ -93,9 +106,10 @@ app.post('/getCategory', function(req, res) {
           }
           else {
             knex.from('items').innerJoin('itemCategory', 'items.ItemId', 'itemCategory.ItemId')
-              .where('ItemName', 'LIKE', req.body.searchTerm)
+              .where('ItemName', 'LIKE', '%'+req.body.searchTerm+'%')
               .then(function(categoryItems) {
-                  res.render('pages/index', {error: false, items: categoryItems, categories: categories, categorySelected: selectedCategoryId});
+                  console.log('yea');
+                  res.render('pages/index', {error: false, items: categoryItems, categories: req.session.categories, categorySelected: req.session.selectedCategoryId});
               })
               .catch(function (err){
                   res.status(500).json({error: true, data: {message: err.message}});
@@ -105,9 +119,9 @@ app.post('/getCategory', function(req, res) {
         else {
           if(req.body.searchTerm == '') {
             knex.from('items').innerJoin('itemCategory', 'items.ItemId', 'itemCategory.ItemId')
-              .where('CategoryId',selectedCategoryId)
+              .where('CategoryId',req.session.selectedCategoryId)
               .then(function(categoryItems) {
-                  res.render('pages/index', {error: false, items: categoryItems, categories: categories, categorySelected: selectedCategoryId});
+                  res.render('pages/index', {error: false, items: categoryItems, categories: req.session.categories, categorySelected: req.session.selectedCategoryId});
               })
               .catch(function (err){
                   res.status(500).json({error: true, data: {message: err.message}});
@@ -115,10 +129,10 @@ app.post('/getCategory', function(req, res) {
           }
           else {
             knex.from('items').innerJoin('itemCategory', 'items.ItemId', 'itemCategory.ItemId')
-              .where('CategoryId',selectedCategoryId)
-              .andWhere('ItemName', 'LIKE', req.body.searchTerm)
+              .where('CategoryId',req.session.selectedCategoryId)
+              .andWhere('ItemName', 'LIKE', '%'+req.body.searchTerm+'%')
               .then(function(categoryItems) {
-                  res.render('pages/index', {error: false, items: categoryItems, categories: categories, categorySelected: selectedCategoryId});
+                  res.render('pages/index', {error: false, items: categoryItems, categories: req.session.categories, categorySelected: req.session.selectedCategoryId});
               })
               .catch(function (err){
                   res.status(500).json({error: true, data: {message: err.message}});
@@ -129,8 +143,6 @@ app.post('/getCategory', function(req, res) {
       // }else {
       //   res.json({error: true, data: {message: 'invalid token'}});
       // }
-      console.log('Came in!');
-      console.log(req.body);
     
 });
 
