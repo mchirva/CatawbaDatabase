@@ -11,6 +11,7 @@
     "knex": "^0.12.6",
     "morgan": "^1.7.0",
     "mysql": "^2.11.1",
-    "session-file-store": "^0.2.2"
+    "session-file-store": "^0.2.2",
+    "uuid": "^2.0.3"
   }
 }
