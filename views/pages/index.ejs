@@ -1,22 +1,30 @@
 <% include ../partials/head %>
 	<main>
-		<div class="jumbotron" style="margin:20px">
+		<div class="container" style="margin:20px;">
 		<div class="row">
 		<% items.forEach(function(item) { %>
 			<div class="col-md-4">
-				<div class="thumbnail" style="margin:20px">
+				<div class="thumbnail">
 					<img src="http://placehold.it/200x200/EEE" alt= <%= item.ItemName %>>
 					<div class="caption" align="center">
 						<h4 class=""><%= item.ItemName %></h4>
 						<h5>$<%= item.Price %></h5>
-						<h5 class=""><%= item.Description %></h5>  <a href="#" class="btn btn-default btn-xs" role="button">Add to Cart</a>
 					</div>
+					<form id="addToCartForm" action="/addToCart" method="POST">
+						<input type="hidden" name="itemId" value=<%= item.ItemId%>>
+                    	<span class="input-group-btn">
+                        	<button class="btn btn-default" style="width: 350px; height: 40px; border: none; align: left; font-size:15px; text-align:center;" type="submit">Add To Cart</button>
+                    	</span>
+					</form>
 				</div>
 			</div>
 		<% }); %>
 		</div>
 		</div>
 	</main>
+<script src="../js/jquery-2.1.1.js"></script>
+<script src="../js/velocity.min.js"></script>
+<script src="../js/main.js"></script> <!-- Resource jQuery -->
 
 <% include ../partials/footer %>
 	

@@ -6,18 +6,44 @@
 <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css">
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+<link href='http://fonts.googleapis.com/css?family=PT+Sans:400,700' rel='stylesheet' type='text/css'>
+
+<link rel="stylesheet" href="../css/reset.css"> <!-- CSS reset -->
+<link rel="stylesheet" href="../css/style.css"> <!-- Resource style -->
+<script src="../js/modernizr.js"></script> <!-- Modernizr -->
+
 </head>
-<body>
+<body background="/images/light_blue_background_pattern.jpg">
+<script type="text/javascript">
+    window.onload=function() {
+        $('#myTabs').on('click', '.nav-tabs a', function () {
+            $(this).closest('.dropdown').addClass('dontClose');
+        })
+
+        $('#loginDropDown').on('hide.bs.dropdown', function (e) {
+            if ($(this).hasClass('dontClose')) {
+                e.preventDefault();
+            }
+            $(this).removeClass('dontClose');
+        });
+    };
+</script>
 <div class="container">
 	<header>
 		<div class="panel-heading" align="center">
       		<h2>The Catawba Project</h2>
     	</div>
-		<div class="panel-body">
+        <div class="panel-body">
+            <% if (error == true) {%>
+            <div class="alert alert-danger" role="alert">
+                <strong>Error! </strong> <%= message %>
+            </div>
+            <% }%>
         <table>
             <form id="searchForm" action="/getCategory" method="post">
             <td rowspan="2">
-                <select name="categorySelectId" style= "display: block; width: 200px; height: 34px; padding: 6px 12px; font-size: 14px; line-height: 1.42857143; color: #555; background-color: #fff; background-image: none; border: 1px solid #ccc; border-radius: 4px">
+                <select name="categorySelectId" style= "display: block; width: 200px; height: 34px; padding: 6px 12px; font-size: 14px; line-height: 1.42857143; color: #555; background-color: #fff; border: 1px solid #ccc; border-radius: 4px">
                     <option <%= (categorySelected == 'all') ? "selected" : "" %> value="all">All Categories</option>
                     <% categories.forEach(function(category) { %>
                         <option <%= (categorySelected == category.CategoryId) ? "selected" : "" %> value=<%= category.CategoryId %>><%= category.CategoryName %></option>
@@ -31,30 +57,64 @@
                 </span>
             </td>
             </form>
-            <td style="padding: 0 0 0 60px">
-                <div class="dropdown">
+            <td style="padding: 0 0 0 40px">
+                <% if (loggedIn == false) { %>
+                <div id="loginDropDown" class="dropdown">
                     <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown">Login <span class="glyphicon glyphicon-user"></span></button>
-                    <ul class="nav nav-tabs">
-                        <li class="nav-item">
-                            <a class="nav-link active" href="#">Login</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#">Register</a>
-                        </li>
-                    </ul>
-                    <form id="loginForm" class="dropdown-menu dropdown-menu-center" method="POST" action="/login" style="width: 210px; align: center;">
-                            <div class="form-group" style="width: 80%; margin: 10px 0 10px 20px">
-                                <input class="form-control" placeholder="Username" name="username" type="text">
+                    <div class="dropdown-menu" id="myTabs">
+                        <ul class="nav nav-tabs">
+                            <li class="active"><a data-target="#login" data-toggle="tab">Login</a></li>
+                            <li><a data-target="#register" data-toggle="tab">Register</a></li>
+                        </ul>
+
+                        <div class="tab-content">
+                            <div class="tab-pane active" id="login">
+                                <form id="loginForm" method="POST" action="/login" style="width: 230px; align: center;">
+                                    <div class="form-group" style="width: 80%; margin: 10px 0 10px 20px">
+                                        <input class="form-control" placeholder="Email Address" name="email" type="email">
+                                    </div>
+                                    <div class="form-group" style="width: 80%; margin: 0 0 10px 20px">
+                                        <input class="form-control" placeholder="Password" name="password" type="password" value="">
+                                    </div>
+                                    <input class="btn btn-lg btn-success btn-block" type="submit" value="Login" style="width: 80%; margin: 0 0 10px 20px">
+                                </form>
                             </div>
-                            <div class="form-group" style="width: 80%; margin: 0 0 10px 20px">
-                                <input class="form-control" placeholder="Password" name="password" type="password" value="">
+                            <div class="tab-pane" id="register">
+                                <form id="registerForm" method="POST" action="/register" style="width: 230px; align: center;">
+                                    <div class="form-group" style="width: 80%; margin: 10px 0 10px 20px">
+                                        <input class="form-control" placeholder="Name" name="name" type="text">
+                                    </div>
+                                    <div class="form-group" style="width: 80%; margin: 0 0 10px 20px">
+                                        <input class="form-control" placeholder="Email Address" name="email" type="email">
+                                    </div>
+                                    <div class="form-group" style="width: 80%; margin: 10px 0 10px 20px">
+                                        <input class="form-control" placeholder="Password" name="password" type="password">
+                                    </div>
+                                    <div class="form-group" style="width: 80%; margin: 0 0 10px 20px">
+                                        <input class="form-control" placeholder="Re-enter Password" name="repassword" type="password" value="">
+                                    </div>
+                                    <div class="checkbox">
+                                        <input type="checkbox" name="newsletter" style="margin: 0 0 10px 20px"><label style="width: 80%; margin: 0 0 10px 20px">I would like to receive newsletter via email.</label>
+                                    </div>
+                                    <input class="btn btn-lg btn-success btn-block" type="submit" value="Register" style="width: 80%; margin: 0 0 10px 20px">
+                                </form>
                             </div>
-                            <input class="btn btn-lg btn-success btn-block" type="submit" value="Login" style="width: 80%; margin: 0 0 10px 20px">
-                    </form>
+                        </div>
+                    </div>
                 </div>
+                <% } else { %>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown">Hello, <%= user.Name %> <span class="glyphicon glyphicon-user"></button>
+                        <ul class="dropdown-menu">
+                            <li><a href="/getMyOrders">My Orders</a></li>
+                            <li><a href="/getMyAccount">My Account</a></li>
+                            <li><a href="/logout">Logout <span class="glyphicon glyphicon-off"></span></a></li>
+                        </ul>
+                    </div>
+                <% } %>
             </td>
             <td style="padding: 0 0 0 60px">
-                <form id="addToCartForm" action="/getCart" method="POST">
+                <form id="cartForm" action="/getCart" method="POST">
                     <span class="input-group-btn">
                         <button class="btn btn-default" style="border: none; font-size: 30px;" type="submit"><span class="glyphicon glyphicon-shopping-cart"></span></button>
                     </span>
@@ -63,5 +123,4 @@
 
         </table>
         </div>
-    </div>		
 	</header>
