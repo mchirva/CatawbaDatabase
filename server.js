@@ -180,7 +180,7 @@ app.post('/getCategory', function(req, res) {
         req.session.selectedCategoryId = req.body.categorySelectId;
         if(req.session.selectedCategoryId == 'all') {
           if(req.body.searchTerm == '') {
-            knex.from('approveditems').innerJoin('itemcategory', 'items.ItemId', 'itemcategory.ItemId')
+            knex.from('approveditems').innerJoin('itemcategory', 'approveditems.ItemId', 'itemcategory.ItemId')
               .then(function(categoryItems) {
                   req.session.items = categoryItems;
                   res.render('pages/index', {error: false, items: categoryItems, categories: req.session.categories, categorySelected: req.session.selectedCategoryId, loggedIn: req.session.loggedIn});
@@ -190,7 +190,7 @@ app.post('/getCategory', function(req, res) {
             })
           }
           else {
-            knex.from('approveditems').innerJoin('itemcategory', 'items.ItemId', 'itemcategory.ItemId')
+            knex.from('approveditems').innerJoin('itemcategory', 'approveditems.ItemId', 'itemcategory.ItemId')
               .where('ItemName', 'LIKE', '%'+req.body.searchTerm+'%')
               .then(function(categoryItems) {
                   req.session.items = categoryItems;
@@ -203,7 +203,7 @@ app.post('/getCategory', function(req, res) {
         }
         else {
           if(req.body.searchTerm == '') {
-            knex.from('approveditems').innerJoin('itemcategory', 'items.ItemId', 'itemcategory.ItemId')
+            knex.from('approveditems').innerJoin('itemcategory', 'approveditems.ItemId', 'itemcategory.ItemId')
               .where('CategoryId',req.session.selectedCategoryId)
               .then(function(categoryItems) {
                   req.session.items = categoryItems;
@@ -214,7 +214,7 @@ app.post('/getCategory', function(req, res) {
             })
           }
           else {
-            knex.from('approveditems').innerJoin('itemcategory', 'items.ItemId', 'itemcategory.ItemId')
+            knex.from('approveditems').innerJoin('itemcategory', 'approveditems.ItemId', 'itemcategory.ItemId')
               .where('CategoryId',req.session.selectedCategoryId)
               .andWhere('ItemName', 'LIKE', '%'+req.body.searchTerm+'%')
               .then(function(categoryItems) {
@@ -277,20 +277,20 @@ app.post('/addToCart', function(req,res){
         });
     }
     else {
-        console.log(req.session.cartitems);
+        console.log('outside - ', req.session.cartitems);
         if (!req.session.cartitems) {
             console.log('initiated');
             var cartArray = [];
             cartArray.push(req.body.itemId);
-            console.log(cartArray);
-            req.session.cartitems = cartArray;
+            req.session.cartitems = cartArray.slice();
+            console.log(req.session.cartitems);
         }
         else {
             console.log('entered');
             console.log(req.session.cartitems);
-            var cartArray = req.session.cartitems;
+            var cartArray = req.session.cartitems.slice();
             cartArray.push(req.body.itemId);
-            req.session.cartitems = cartArray;
+            req.session.cartitems = cartArray.slice();
         }
     }
 });
