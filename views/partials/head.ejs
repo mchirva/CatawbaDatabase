@@ -27,7 +27,21 @@
             }
             $(this).removeClass('dontClose');
         });
+
+        $("#cartQuantity").bind('keyup mouseup', function () {
+            var price = $("#cartItemPrice").text().substring(1, $("#cartItemPrice").text().length);
+            var quantity = $("#cartQuantity").val();
+            var initialSubTotal = $("#cartSubTotal").text().substring(1, $("#cartSubTotal").text().length);
+            var subTotal = price * quantity;
+            var subTotalString = subTotal.toString();
+            var Total = $("#cartTotal").text().substring(7, $("#cartTotal").text().length);
+            var newTotal = Total - initialSubTotal + subTotal;
+            $("#cartTotal").html("<strong>Total $".concat(newTotal.toString()).concat("</strong>"));
+            $("#cartSubTotal").text("$".concat(subTotalString));
+
+        });
     };
+
 </script>
 <div class="container">
 	<header>
@@ -39,12 +53,16 @@
             <div class="alert alert-danger" role="alert">
                 <strong>Error! </strong> <%= message %>
             </div>
+            <% } else if (alert == true) {%>
+            <div class="alert alert-info" role="alert">
+                <strong><%= message %></strong>
+            </div>
             <% }%>
         <table>
             <form id="searchForm" action="/getCategory" method="post">
             <td rowspan="2">
                 <select name="categorySelectId" style= "display: block; width: 200px; height: 34px; padding: 6px 12px; font-size: 14px; line-height: 1.42857143; color: #555; background-color: #fff; border: 1px solid #ccc; border-radius: 4px">
-                    <option <%= (categorySelected == 'all') ? "selected" : "" %> value="all">All Categories</option>
+                    <option <%= (categorySelected == 'None') ? "selected" : "" %> value="all">All Categories</option>
                     <% categories.forEach(function(category) { %>
                         <option <%= (categorySelected == category.CategoryId) ? "selected" : "" %> value=<%= category.CategoryId %>><%= category.CategoryName %></option>
                     <% }); %>    

@@ -29,6 +29,11 @@ var Schema = {
   cart: {
     CartId: {type: 'string', maxlength: 254, nullable: false, primary: true},
     UserId: {type: 'string', maxlength: 254, nullable: false}
+  },
+  cartitem: {
+    CartId: {type: 'string', maxlength: 254, nullable: false},
+    ItemId: {type: 'string', maxlength: 254, nullable: false},
+    Quantity: {type: 'number', nullable: false}
   }
 };
 module.exports = Schema;

@@ -89,11 +89,13 @@ app.get('/', function(req, res) {
         knex.from('categories')
           .then(function (categoriesCollection) {
               req.session.categories = categoriesCollection;
-              req.session.loggedIn = false;
+              if(!req.session.loggedIn) {
+                  req.session.loggedIn = false;
+              }
               knex.from('approveditems')
                 .then(function (itemsCollection) {
                     req.session.items = itemsCollection;
-                    res.render('pages/index', {error: false, items: itemsCollection, categories: categoriesCollection, categorySelected: 'None', loggedIn: req.session.loggedIn});
+                    res.render('pages/index', {error: false, items: itemsCollection, categories: categoriesCollection, categorySelected: 'None', loggedIn: req.session.loggedIn, alert: false, user: req.session.user});
                 })
                 .catch(function (err) {
                     res.render('pages/index', {error: true, message: err.message});
@@ -117,9 +119,10 @@ app.post('/login', function (req, res) {
             if (!user) {
                 res.render('pages/index', {error: true, message: "Invalid user credentials", items: req.session.items, categories: req.session.categories, loggedIn: req.session.loggedIn, categorySelected: req.session.selectedCategoryId});
             } else {
+                req.session.user = user.attributes;
                 req.session.userId = user.attributes.UserId;
                 req.session.loggedIn = true;
-                res.render('pages/index', {error: false, items: req.session.items, categories: req.session.categories, categorySelected: req.session.selectedCategoryId, loggedIn: req.session.loggedIn, user: user.attributes});
+                res.render('pages/index', {error: false, alert: false, items: req.session.items, categories: req.session.categories, categorySelected: req.session.selectedCategoryId, loggedIn: req.session.loggedIn, user: req.session.user});
             }
         })
         .catch(function (err) {
@@ -146,6 +149,8 @@ app.post('/register', function (req, res) {
             .save(null, {method: 'insert'})
             .then(function (user) {
                 req.session.loggedIn = true;
+                req.session.user = user.attributes;
+                req.session.userId = user.attributes.UserId;
                 Cart.forge({
                     CartId: uuid.v1(),
                     UserId: userId
@@ -153,16 +158,16 @@ app.post('/register', function (req, res) {
                 .save(null, {method: 'insert'})
                 .then(function (cart) {
                     req.session.cartId = cart.attributes.CartId;
-                    res.render('pages/index', {error: false, items: req.session.items, categories: req.session.categories, categorySelected: req.session.selectedCategoryId, loggedIn: req.session.loggedIn, user: user.attributes});
+                    res.render('pages/index', {error: false, alert: false, items: req.session.items, categories: req.session.categories, categorySelected: req.session.selectedCategoryId, loggedIn: req.session.loggedIn, user: req.session.user});
                 })
                 .catch(function (err) {
-                    res.render('pages/index', {error: true, message: err.message, items: req.session.items, categories: req.session.categories, loggedIn: req.session.loggedIn, categorySelected: req.session.selectedCategoryId});
+                    res.render('pages/index', {error: true, message: err.message, items: req.session.items, categories: req.session.categories, loggedIn: req.session.loggedIn, categorySelected: req.session.selectedCategoryId, user: req.session.user});
                 });
             })
             .catch(function (err) {
                 console.log(err.code == 'ER_DUP_ENTRY');
                 if (err.code == 'ER_DUP_ENTRY') {
-                    res.render('pages/index', {error: true, message: 'Email Address already exists! Try logging in.', items: req.session.items, categories: req.session.categories, loggedIn: req.session.loggedIn, categorySelected: req.session.selectedCategoryId});
+                    res.render('pages/index', {error: true, alert: false, message: 'Email Address already exists! Try logging in.', items: req.session.items, categories: req.session.categories, loggedIn: req.session.loggedIn, categorySelected: req.session.selectedCategoryId});
                 }
                 else{
                     res.render('pages/index', {error: true, message: err.message, items: req.session.items, categories: req.session.categories, loggedIn: req.session.loggedIn, categorySelected: req.session.selectedCategoryId});
@@ -171,6 +176,17 @@ app.post('/register', function (req, res) {
     }
     else{
         res.render('pages/index', {error: true, message: 'Passwords do not match! Please try again.', items: req.session.items, categories: req.session.categories, loggedIn: req.session.loggedIn, categorySelected: req.session.selectedCategoryId});
+    }
+});
+
+app.get('/checkout', function (req, res) {
+    if(req.session.loggedIn) {
+
+    }
+    else {
+        for(var i = 0; i < req.session.cartitems.length; i++){
+
+        }
     }
 });
 
@@ -183,7 +199,7 @@ app.post('/getCategory', function(req, res) {
             knex.from('approveditems').innerJoin('itemcategory', 'approveditems.ItemId', 'itemcategory.ItemId')
               .then(function(categoryItems) {
                   req.session.items = categoryItems;
-                  res.render('pages/index', {error: false, items: categoryItems, categories: req.session.categories, categorySelected: req.session.selectedCategoryId, loggedIn: req.session.loggedIn});
+                  res.render('pages/index', {error: false, alert: false, items: categoryItems, categories: req.session.categories, categorySelected: req.session.selectedCategoryId, loggedIn: req.session.loggedIn, user: req.session.user});
               })
               .catch(function (err){
                   res.status(500).json({error: true, message: err.message});
@@ -194,7 +210,7 @@ app.post('/getCategory', function(req, res) {
               .where('ItemName', 'LIKE', '%'+req.body.searchTerm+'%')
               .then(function(categoryItems) {
                   req.session.items = categoryItems;
-                  res.render('pages/index', {error: false, items: categoryItems, categories: req.session.categories, categorySelected: req.session.selectedCategoryId, loggedIn: req.session.loggedIn});
+                  res.render('pages/index', {error: false, alert: false, items: categoryItems, categories: req.session.categories, categorySelected: req.session.selectedCategoryId, loggedIn: req.session.loggedIn, user: req.session.user});
               })
               .catch(function (err){
                   res.status(500).json({error: true, message: err.message});
@@ -207,7 +223,8 @@ app.post('/getCategory', function(req, res) {
               .where('CategoryId',req.session.selectedCategoryId)
               .then(function(categoryItems) {
                   req.session.items = categoryItems;
-                  res.render('pages/index', {error: false, items: categoryItems, categories: req.session.categories, categorySelected: req.session.selectedCategoryId, loggedIn: req.session.loggedIn});
+                  res.render('pages/index', {error: false, alert: false, items: categoryItems, categories: req.session.categories, categorySelected: req.session.selectedCategoryId, loggedIn: req.session.loggedIn, user: req.session.user});
+
               })
               .catch(function (err){
                   res.status(500).json({error: true, message: err.message});
@@ -219,10 +236,10 @@ app.post('/getCategory', function(req, res) {
               .andWhere('ItemName', 'LIKE', '%'+req.body.searchTerm+'%')
               .then(function(categoryItems) {
                   req.session.items = categoryItems;
-                  res.render('pages/index', {error: false, items: categoryItems, categories: req.session.categories, categorySelected: req.session.selectedCategoryId, loggedIn: req.session.loggedIn});
+                  res.render('pages/index', {error: false, alert: false, items: categoryItems, categories: req.session.categories, categorySelected: req.session.selectedCategoryId, loggedIn: req.session.loggedIn, user: req.session.user});
               })
               .catch(function (err){
-                  res.status(500).json({error: true, message: err.message});
+                  res.render('pages/index', {error: true, message: err.message, user: req.session.user});
             })
           }
         }
@@ -235,62 +252,260 @@ app.post('/getCategory', function(req, res) {
 
 app.post('/getCart', function (req, res){
     if(!req.session.loggedIn) {
-        if(!req.session.cartitems) {
-            res.json()
+        if(!req.session.cartitems || req.session.cartitems.length == 0) {
+            res.render('pages/cart', {error: false, alert: false, cartitems: [], items: req.session.items, categories: req.session.categories, categorySelected: req.session.selectedCategoryId, loggedIn: req.session.loggedIn, user: req.session.user});
         }
         else {
+            var itemIds = [];
+            for (var j = 0; j < req.session.cartitems.length; j++) {
+                itemIds.push(req.session.cartitems[j].item);
+            }
+            knex.select('ItemId', 'Quantity as totalQuantity', 'ItemName', 'Description', 'Price', 'Discount', 'OnSale').from('approveditems')
+                .whereIn('ItemId', itemIds)
+                .then(function (items) {
+                    var approveditems =[];
+                    for (var index = 0; index < items.length; index++) {
+                        items[index].Quantity = req.session.cartitems[index]['quantity'];
+                        approveditems.push(items[index]);
+                        if(index == req.session.cartitems.length - 1) {
+                            res.render('pages/cart', {
+                                error: false,
+                                alert: false,
+                                cartitems: approveditems,
+                                items: req.session.items,
+                                categories: req.session.categories,
+                                categorySelected: req.session.selectedCategoryId,
+                                loggedIn: req.session.loggedIn
+                            });
+                        }
+                    }
+                })
+                .catch(function (err) {
+                    res.render('pages/cart', {
+                        error: true,
+                        message: err.message,
+                        cartitems: [],
+                        items: req.session.items,
+                        categories: req.session.categories,
+                        categorySelected: req.session.selectedCategoryId,
+                        loggedIn: req.session.loggedIn
+                    });
+                });
+            }
+        } else {
+            knex.select('cartItem.ItemId', 'cartitem.Quantity', 'approveditems.Quantity as totalQuantity', 'approveditems.ItemName', 'approveditems.Description', 'approveditems.Price', 'approveditems.Discount', 'approveditems.OnSale').from('cartitem').innerJoin('cart', 'cartitem.CartId', 'cart.CartId').innerJoin('approveditems', 'cartitem.ItemId', 'approveditems.ItemId')
+                .where('cart.UserId', req.session.userId)
+                .then(function (cartitems) {
+                    console.log(cartitems);
+                    res.render('pages/cart', {
+                        error: false,
+                        alert: false,
+                        cartitems: cartitems,
+                        categories: req.session.categories,
+                        categorySelected: req.session.selectedCategoryId,
+                        loggedIn: req.session.loggedIn,
+                        user: req.session.user
+                    });
+                })
+                .catch(function (err) {
+                    console.log(err);
+                    res.render('pages/cart', {
+                        error: true,
+                        message: err.message,
+                        caritems: [],
+                        totalPrice: 0,
+                        items: req.session.items,
+                        categories: req.session.categories,
+                        categorySelected: req.session.selectedCategoryId,
+                        loggedIn: req.session.loggedIn,
+                        user: req.session.user
+                    });
+                });
+        }
+});
 
+app.post('/deleteItem', function (req, res) {
+   if(req.session.loggedIn) {
+       knex.from('cart')
+           .where('UserId', req.session.userId)
+           .then( function (cart) {
+               knex.from('cartitem')
+                   .where('CartId', cart[0].CartId)
+                   .andWhere('ItemId', req.body.itemId)
+                   .del()
+                   .then( function (count) {
+                       res.redirect(307, '/getCart');
+                   })
+                   .catch( function (err) {
+                       res.render('pages/cart', {
+                           error: true,
+                           message: err.message,
+                           cartitems: [],
+                           items: req.session.items,
+                           categories: req.session.categories,
+                           categorySelected: req.session.selectedCategoryId,
+                           loggedIn: req.session.loggedIn,
+                           user: req.session.user
+                       });
+                   })
+           })
+           .catch(function (err) {
+               res.render('pages/cart', {
+                   error: true,
+                   message: err.message,
+                   cartitems: [],
+                   items: req.session.items,
+                   categories: req.session.categories,
+                   categorySelected: req.session.selectedCategoryId,
+                   loggedIn: req.session.loggedIn,
+                   user: req.session.user
+               });
+           });
+   }
+   else {
+       var index = -1;
+       for (var i = 0; i < req.session.cartitems.length; i++) {
+           console.log(i);
+           if (req.session.cartitems[i] == req.body.itemId) {
+               index = i;
+           }
+       }
+       req.session.cartitems.splice(index, 1);
+       console.log(req.session.cartitems);
+       res.redirect(307, '/getCart');
+   }
+});
+
+app.post('/saveCart', function(req, res) {
+    if(req.session.loggedIn) {
+        console.log(req.session.userId+" "+req.body.itemId + " "+req.body.itemQuantity);
+        knex.from('cartitem').innerJoin('cart', 'cart.CartId', 'cartitem.CartId')
+            .where('cart.UserId', req.session.userId)
+            .andWhere('cartitem.ItemId', req.body.itemId)
+            .update({Quantity: req.body.itemQuantity})
+            .then(function (cartItem) {
+                res.redirect(307, '/getCart');
+            })
+            .catch(function (err) {
+                res.render('pages/cart', {
+                    error: true,
+                    message: err.message,
+                    cartitems: [],
+                    items: req.session.items,
+                    categories: req.session.categories,
+                    categorySelected: req.session.selectedCategoryId,
+                    loggedIn: req.session.loggedIn,
+                    user: req.session.user
+                });
+            })
+    }
+    else  {
+        for(var i = 0; i < req.session.cartitems.length; i++) {
+            if (req.session.cartitems[i].item == req.body.itemId) {
+                req.session.cartitems[i].quantity = req.body.itemQuantity;
+                res.redirect(307, '/getCart');
+            }
         }
     }
 });
 
 app.post('/addToCart', function(req,res){
     if (req.session.loggedIn) {
-        var ItemId = req.body.itemid;
-        var Cartid;
-        knex('cart').where(
-            'userid', req.session.userId
-        ).select('CartId').then(function (cart) {
-            Cartid = cart[0].CartId;
-            console.log(cart[0].CartId);
-            req.session.cartid = cart[0].CartId;
-            var insert1 = {CartId: Cartid, ItemId: ItemId, quantity: "1"};
-            knex.insert(insert1).into("cartitem").then(function (Item) {
-                res.redirect(307, '/getCart');
-            })
-                .catch(function (err) {
-                    if (err.code == 'ER_DUP_ENTRY') {
-                        knex('cartitem')
-                            .where('ItemId', req.body.itemid)
-                            .andWhere('CartId', req.session.cartid)
-                            .increment('quantity', 1)
-                            .then(function (cartitem) {
+        knex('cartitem').innerJoin('cart', 'cart.CartId', 'cartItem.CartId')
+            .where('cart.UserId', req.session.userId)
+            .where('cartItem.ItemId', req.body.itemId)
+            .then(function (items) {
+                if(items.length > 0) {
+                    var Cartid = items[0].CartId;
+                    knex('approvedItems')
+                        .where('ItemId', req.body.itemId)
+                        .then( function (appItems) {
+                            console.log(items[0].Quantity+" "+appItems[0].Quantity);
+                            if (items[0].Quantity < appItems[0].Quantity) {
+                                knex('cartitem')
+                                    .where('ItemId', req.body.itemId)
+                                    .andWhere('CartId', Cartid)
+                                    .increment('Quantity', 1)
+                                    .then(function (cartitem) {
+                                        res.redirect(307, '/getCart');
+                                    })
+                                    .catch( function (err) {
+                                        res.redirect(307, '/getCart');
+                                    })
+                            }
+                            else {
                                 res.redirect(307, '/getCart');
+                            }
+                        })
+                }
+                else{
+                    knex('cart')
+                        .where('UserId', req.session.userId)
+                        .then( function (cart) {
+                            CartItem.forge({
+                                CartId: cart[0].CartId,
+                                ItemId: req.body.itemId,
+                                Quantity: 1
                             })
-                    }
-                    else {
-                        console.log(err);
-                        res.status(500).json({error: true, data: {message: err.message}});
-                    }
+                                .save(null, {method: 'insert'})
+                                .then(function (cartitem) {
+                                    res.redirect(307, '/getCart');
+                                })
+                                .catch(function (err) {
+                                    res.redirect(307, '/getCart');
+                                });
+                        })
+                }
+            })
+            .catch( function (err) {
 
-                })
-        });
+            });
     }
     else {
-        console.log('outside - ', req.session.cartitems);
         if (!req.session.cartitems) {
-            console.log('initiated');
-            var cartArray = [];
-            cartArray.push(req.body.itemId);
-            req.session.cartitems = cartArray.slice();
-            console.log(req.session.cartitems);
+            req.session.cartitems = [];
+            knex.from('approveditems')
+                .where('ItemId', req.body.itemId)
+                .then( function(items) {
+                    req.session.cartitems.push({item: req.body.itemId, quantity: 1, totalQuantity: items[0].Quantity});
+                    res.redirect(307, '/getCart');
+                })
+                .catch(function (err) {
+
+                });
         }
         else {
-            console.log('entered');
-            console.log(req.session.cartitems);
-            var cartArray = req.session.cartitems.slice();
-            cartArray.push(req.body.itemId);
-            req.session.cartitems = cartArray.slice();
+            var existing = 0;
+            var index = -1;
+            for (var i = 0; i < req.session.cartitems.length; i++) {
+                if (req.session.cartitems[i].item == req.body.itemId) {
+                    existing = 1;
+                    index = i;
+                    console.log('existing');
+                }
+            }
+            if (existing == 0) {
+                req.session.cartitems.push({item: req.body.itemId, quantity: 1});
+                res.redirect(307, '/getCart');
+            }
+            else {
+                knex.from('approveditems')
+                    .where('ItemId',req.body.itemId)
+                    .then( function (items) {
+                        console.log('came in');
+                        if (items[0].Quantity > req.session.cartitems[index].quantity) {
+                            req.session.cartitems[index].quantity = req.session.cartitems[index].quantity + 1;
+                            console.log(req.session.cartitems[index]);
+                            res.redirect(307, '/getCart');
+                        }
+                        else {
+                            res.redirect(307, '/getCart');
+                        }
+                    })
+                    .catch(function (err) {
+                        console.log(err);
+                    });
+            }
         }
     }
 });
