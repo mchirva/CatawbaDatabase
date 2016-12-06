@@ -52,6 +52,10 @@ var CartItem = Bookshelf.Model.extend({
     tableName: 'cartitem'
 });
 
+var Items = Bookshelf.Model.extend({
+    tableName: 'items'
+});
+
 var Category = Bookshelf.Model.extend({
   tableName: 'categories'
 });
@@ -70,29 +74,22 @@ var CategoryItem = Bookshelf.Model.extend({
     }
 });
 
-var Cart = Bookshelf.Collection.extend({
-    model: 'cart'
+var Cart = Bookshelf.Model.extend({
+    tableName: 'cart'
 });
 
-var ApprovedItems = Bookshelf.Collection.extend({
-  model: ApprovedItem
-});
 
-var Categories = Bookshelf.Collection.extend({
-  model: Category
-});
 
 app.get('/', function(req, res) {
     //var decoded = jwt.verify(req.body.token, JWTKEY);
       //if(decoded) {
-    console.log(__dirname + '/images');
         knex.from('categories')
           .then(function (categoriesCollection) {
               req.session.categories = categoriesCollection;
               if(!req.session.loggedIn) {
                   req.session.loggedIn = false;
               }
-              knex.from('approveditems')
+              knex.from('items')
                 .then(function (itemsCollection) {
                     req.session.items = itemsCollection;
                     res.render('pages/index', {error: false, items: itemsCollection, categories: categoriesCollection, categorySelected: 'None', loggedIn: req.session.loggedIn, alert: false, user: req.session.user});
@@ -130,6 +127,65 @@ app.post('/login', function (req, res) {
         });
 });
 
+app.post('/donate', function (req, res) {
+    console.log('Coming in');
+    Items.forge({
+        ItemId: uuid.v1(),
+        ItemName: req.body.itemName,
+        Description: req.body.description,
+        Price: req.body.price,
+        Quantity: req.body.quantity
+    })
+        .save(null, {method: 'insert'})
+        .then(function (user) {
+            var message = 'Thank you for donating '+req.body.itemName+'! The item will be available once the moderators approve it. You will receive the donation receipt shortly.';
+            res.render('pages/index', {error: false, alert: true, message: message, categories: req.session.categories, items: req.session.items, categorySelected: req.session.selectedCategoryId, loggedIn: req.session.loggedIn, user: req.session.user});
+        })
+        .catch(function (err) {
+            var message = 'Oops! Something went wrong. Please try again later.';
+            res.render('pages/index', {error: true, alert: false, message: message, categories: req.session.categories, items: req.session.items, categorySelected: req.session.selectedCategoryId, loggedIn: req.session.loggedIn, user: req.session.user});
+        })
+});
+
+app.get('/getNewItems', function (req, res) {
+   knex('items')
+       .where('IsApproved', 0)
+       .then( function (newItems) {
+           res.render('pages/index', {error: false, alert: false, new: true, categories: req.session.categories, items: newItems, categorySelected: req.session.selectedCategoryId, loggedIn: req.session.loggedIn, user: req.session.user});
+       })
+       .catch( function (err) {
+           res.render('pages/index', {error: true, alert: false, message: err.message, categories: req.session.categories, items: req.session.items, categorySelected: req.session.selectedCategoryId, loggedIn: req.session.loggedIn, user: req.session.user});
+       });
+});
+
+app.post('/updateItem', function (req, res) {
+    knex.from('items')
+        .where('ItemId', req.body.itemId)
+        .update({
+            ItemName: req.body.itemName,
+            Price: req.body.price,
+            Quantity: req.body.quantity,
+            Description: req.body.description,
+            IsApproved: 1
+        })
+        .then(function (item) {
+            CategoryItem.forge({
+                CategoryId: req.body.categorySelectId,
+                ItemId: item.ItemId
+            })
+                .save(null, {method: 'insert'})
+                .then(function (count) {
+                    res.render('pages/index', {error: false, alert: false, items: req.session.items, categories: req.session.categories, categorySelected: req.session.selectedCategoryId, loggedIn: req.session.loggedIn, user: req.session.user});
+                })
+                .catch(function (err) {
+                    res.render('pages/index', {error: true, message: err.message, items: req.session.items, categories: req.session.categories, loggedIn: req.session.loggedIn, categorySelected: req.session.selectedCategoryId, user: req.session.user});
+                });
+        })
+        .catch( function (err) {
+
+        });
+});
+
 app.post('/register', function (req, res) {
     var userId = uuid.v1();
     var name = req.body.name;
@@ -153,7 +209,7 @@ app.post('/register', function (req, res) {
                 req.session.userId = user.attributes.UserId;
                 Cart.forge({
                     CartId: uuid.v1(),
-                    UserId: userId
+                    UserId: req.session.userId
                 })
                 .save(null, {method: 'insert'})
                 .then(function (cart) {
@@ -165,7 +221,7 @@ app.post('/register', function (req, res) {
                 });
             })
             .catch(function (err) {
-                console.log(err.code == 'ER_DUP_ENTRY');
+                console.log(err.message);
                 if (err.code == 'ER_DUP_ENTRY') {
                     res.render('pages/index', {error: true, alert: false, message: 'Email Address already exists! Try logging in.', items: req.session.items, categories: req.session.categories, loggedIn: req.session.loggedIn, categorySelected: req.session.selectedCategoryId});
                 }
@@ -179,9 +235,33 @@ app.post('/register', function (req, res) {
     }
 });
 
-app.get('/checkout', function (req, res) {
+app.get('/confirmCheckout', function (req, res) {
     if(req.session.loggedIn) {
+        console.log(req.session.user.Address.split(',')[0]);
+        res.render('pages/address', {error: false, alert: false, loggedIn: req.session.loggedIn, categories: req.session.categories, categorySelected: req.session.selectedCategoryId, address: req.session.user.Address.split(','), user: req.session.user});
+    }
+    else {
+        res.render('pages/address', {error: false, loggedIn: req.session.loggedIn, categories: req.session.categories, categorySelected: req.session.selectedCategoryId})
+    }
+});
 
+app.post('/checkout', function (req, res) {
+    if(req.session.loggedIn) {
+        knex
+            .raw('call checkOut(?)', req.session.userId)
+            .then( function (response) {
+                knex('solditem').innerJoin('items', 'solditem.ItemId', 'items.ItemId')
+                    .where('solditem.Buyer', req.session.userId)
+                    .then( function (solditems) {
+                        res.render('pages/orders', {error: false, alert: true, message: 'Order has been placed!', loggedIn: req.session.loggedIn, categories: req.session.categories, categorySelected: req.session.selectedCategoryId, user: req.session.user, solditems: solditems});
+                    })
+                    .catch( function (err) {
+                        res.render('pages/orders', {error: true, alert: false, message: err.message, loggedIn: req.session.loggedIn, categories: req.session.categories, categorySelected: req.session.selectedCategoryId, user: req.session.user, solditems: []});
+                    });
+            })
+            .catch( function (err) {
+                console.log(err);
+            });
     }
     else {
         for(var i = 0; i < req.session.cartitems.length; i++){
@@ -190,13 +270,24 @@ app.get('/checkout', function (req, res) {
     }
 });
 
+app.get('/getMyOrders', function (req, res) {
+    knex('solditem').innerJoin('items', 'solditem.ItemId', 'items.ItemId')
+        .where('solditem.Buyer', req.session.userId)
+        .then( function (solditems) {
+            res.render('pages/orders', {error: false, alert: false, loggedIn: req.session.loggedIn, categories: req.session.categories, categorySelected: req.session.selectedCategoryId, user: req.session.user, solditems: solditems});
+        })
+        .catch( function (err) {
+            res.render('pages/orders', {error: true, alert: false, message: err.message, loggedIn: req.session.loggedIn, categories: req.session.categories, categorySelected: req.session.selectedCategoryId, user: req.session.user, solditems: []});
+        });
+});
+
 app.post('/getCategory', function(req, res) {
     //  var decoded = jwt.verify(req.body.token, JWTKEY);
     //   if(decoded) {
         req.session.selectedCategoryId = req.body.categorySelectId;
         if(req.session.selectedCategoryId == 'all') {
           if(req.body.searchTerm == '') {
-            knex.from('approveditems').innerJoin('itemcategory', 'approveditems.ItemId', 'itemcategory.ItemId')
+            knex.from('items').innerJoin('itemcategory', 'items.ItemId', 'itemcategory.ItemId')
               .then(function(categoryItems) {
                   req.session.items = categoryItems;
                   res.render('pages/index', {error: false, alert: false, items: categoryItems, categories: req.session.categories, categorySelected: req.session.selectedCategoryId, loggedIn: req.session.loggedIn, user: req.session.user});
@@ -206,7 +297,7 @@ app.post('/getCategory', function(req, res) {
             })
           }
           else {
-            knex.from('approveditems').innerJoin('itemcategory', 'approveditems.ItemId', 'itemcategory.ItemId')
+            knex.from('items').innerJoin('itemcategory', 'items.ItemId', 'itemcategory.ItemId')
               .where('ItemName', 'LIKE', '%'+req.body.searchTerm+'%')
               .then(function(categoryItems) {
                   req.session.items = categoryItems;
@@ -219,7 +310,7 @@ app.post('/getCategory', function(req, res) {
         }
         else {
           if(req.body.searchTerm == '') {
-            knex.from('approveditems').innerJoin('itemcategory', 'approveditems.ItemId', 'itemcategory.ItemId')
+            knex.from('items').innerJoin('itemcategory', 'items.ItemId', 'itemcategory.ItemId')
               .where('CategoryId',req.session.selectedCategoryId)
               .then(function(categoryItems) {
                   req.session.items = categoryItems;
@@ -231,7 +322,7 @@ app.post('/getCategory', function(req, res) {
             })
           }
           else {
-            knex.from('approveditems').innerJoin('itemcategory', 'approveditems.ItemId', 'itemcategory.ItemId')
+            knex.from('items').innerJoin('itemcategory', 'items.ItemId', 'itemcategory.ItemId')
               .where('CategoryId',req.session.selectedCategoryId)
               .andWhere('ItemName', 'LIKE', '%'+req.body.searchTerm+'%')
               .then(function(categoryItems) {
@@ -260,7 +351,7 @@ app.post('/getCart', function (req, res){
             for (var j = 0; j < req.session.cartitems.length; j++) {
                 itemIds.push(req.session.cartitems[j].item);
             }
-            knex.select('ItemId', 'Quantity as totalQuantity', 'ItemName', 'Description', 'Price', 'Discount', 'OnSale').from('approveditems')
+            knex.select('ItemId', 'Quantity as totalQuantity', 'ItemName', 'Description', 'Price', 'Discount', 'OnSale').from('items')
                 .whereIn('ItemId', itemIds)
                 .then(function (items) {
                     var approveditems =[];
@@ -293,7 +384,7 @@ app.post('/getCart', function (req, res){
                 });
             }
         } else {
-            knex.select('cartItem.ItemId', 'cartitem.Quantity', 'approveditems.Quantity as totalQuantity', 'approveditems.ItemName', 'approveditems.Description', 'approveditems.Price', 'approveditems.Discount', 'approveditems.OnSale').from('cartitem').innerJoin('cart', 'cartitem.CartId', 'cart.CartId').innerJoin('approveditems', 'cartitem.ItemId', 'approveditems.ItemId')
+            knex.select('cartItem.ItemId', 'cartitem.Quantity', 'items.Quantity as totalQuantity', 'items.ItemName', 'items.Description', 'items.Price', 'items.Discount', 'items.OnSale').from('cartitem').innerJoin('cart', 'cartitem.CartId', 'cart.CartId').innerJoin('items', 'cartitem.ItemId', 'items.ItemId')
                 .where('cart.UserId', req.session.userId)
                 .then(function (cartitems) {
                     console.log(cartitems);
@@ -417,7 +508,7 @@ app.post('/addToCart', function(req,res){
             .then(function (items) {
                 if(items.length > 0) {
                     var Cartid = items[0].CartId;
-                    knex('approvedItems')
+                    knex('items')
                         .where('ItemId', req.body.itemId)
                         .then( function (appItems) {
                             console.log(items[0].Quantity+" "+appItems[0].Quantity);
@@ -464,7 +555,7 @@ app.post('/addToCart', function(req,res){
     else {
         if (!req.session.cartitems) {
             req.session.cartitems = [];
-            knex.from('approveditems')
+            knex.from('items')
                 .where('ItemId', req.body.itemId)
                 .then( function(items) {
                     req.session.cartitems.push({item: req.body.itemId, quantity: 1, totalQuantity: items[0].Quantity});
@@ -489,10 +580,9 @@ app.post('/addToCart', function(req,res){
                 res.redirect(307, '/getCart');
             }
             else {
-                knex.from('approveditems')
+                knex.from('items')
                     .where('ItemId',req.body.itemId)
                     .then( function (items) {
-                        console.log('came in');
                         if (items[0].Quantity > req.session.cartitems[index].quantity) {
                             req.session.cartitems[index].quantity = req.session.cartitems[index].quantity + 1;
                             console.log(req.session.cartitems[index]);

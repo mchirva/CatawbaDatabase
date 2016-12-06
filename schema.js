@@ -1,12 +1,17 @@
 var Schema = {
-  approveditems: {
-    ItemId: {type: 'string', maxlength: 254, nullable: false, primary: true},
+  items: {
+    ItemId:{type: 'string', maxlength: 254, nullable: false, primary: true},
     ItemName: {type: 'string', maxlength: 50, nullable: false},
     Description: {type: 'string', maxlength: 500, nullable: false},
     Price: {type: 'decimal', nullable: false},
     OnSale: {type: 'boolean', nullable: false},
     Discount: {type: 'decimal', nullable: true},
-    Quantity: {type: 'integer', nullable: false}
+    Quantity: {type: 'integer', nullable: false},
+    IsApproved: {type: 'integer', nullable: false}
+  },
+  approveditems: {
+    ItemId: {type: 'string', maxlength: 254, nullable: false},
+    ApprovedBy: {type: 'string', maxlength: 254, nullable: false}
   },
   categories: {
     CategoryId: {type: 'string', maxlength: 254, nullable: false, primary: true},
@@ -34,6 +39,12 @@ var Schema = {
     CartId: {type: 'string', maxlength: 254, nullable: false},
     ItemId: {type: 'string', maxlength: 254, nullable: false},
     Quantity: {type: 'number', nullable: false}
+  },
+  solditem: {
+    ItemId: {type: 'string', maxlength: 254, nullable: false},
+    SoldQuantity: {type: 'number', nullable: false},
+    SoldDate: {type: 'date', nullable: false},
+    Buyer: {type: 'string', maxlength: 254, nullable: false}
   }
 };
 module.exports = Schema;
