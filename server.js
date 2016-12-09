@@ -226,8 +226,8 @@ app.post('/donate', function (req, res) {
     var form = new formidable.IncomingForm();
     form.parse(req, function(err, fields, files) {// `file` is the name of the <input> field of type `file`
         // aws.config.update({
-        //     accessKeyId: 'AKIAIYYLTZWNKHK4JOUA',
-        //     secretAccessKey: '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'
+        //     accessKeyId: 'KEY',
+        //     secretAccessKey: 'SECRET'
         // });
         //
         // var s3 = new aws.S3();
