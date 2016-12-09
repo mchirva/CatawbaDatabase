@@ -7,11 +7,16 @@ var Schema = {
     OnSale: {type: 'boolean', nullable: false},
     Discount: {type: 'decimal', nullable: true},
     Quantity: {type: 'integer', nullable: false},
-    IsApproved: {type: 'integer', nullable: false}
+    IsApproved: {type: 'integer', nullable: false},
+    ImageUrl: {type: 'string', maxlength: 500, nullable: false}
   },
   approveditems: {
     ItemId: {type: 'string', maxlength: 254, nullable: false},
     ApprovedBy: {type: 'string', maxlength: 254, nullable: false}
+  },
+  uncheckedItems: {
+    ItemId: {type: 'string', maxlength: 254, nullable: false},
+    UncheckedBy: {type: 'string', maxlength: 254, nullable: false}
   },
   categories: {
     CategoryId: {type: 'string', maxlength: 254, nullable: false, primary: true},
@@ -39,6 +44,9 @@ var Schema = {
     CartId: {type: 'string', maxlength: 254, nullable: false},
     ItemId: {type: 'string', maxlength: 254, nullable: false},
     Quantity: {type: 'number', nullable: false}
+  },
+  donorrequests: {
+    UserId: {type: 'string', maxlength: 254, nullable: false}
   },
   solditem: {
     ItemId: {type: 'string', maxlength: 254, nullable: false},

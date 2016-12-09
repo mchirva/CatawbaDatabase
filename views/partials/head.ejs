@@ -6,11 +6,11 @@
 <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css">
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
-
+    <link rel="stylesheet" href="/css/style.css">
 <link href='http://fonts.googleapis.com/css?family=PT+Sans:400,700' rel='stylesheet' type='text/css'>
 
 </head>
-<body background="/images/light_blue_background_pattern.jpg">
+<body>
 <script type="text/javascript">
     window.onload=function() {
         $('#myTabs').on('click', '.nav-tabs a', function () {
@@ -40,21 +40,21 @@
 
 </script>
 <div class="container">
-	<header>
-		<div class="panel-heading" align="center">
-      		<h2>The Catawba Project</h2>
+	<header style="background-image: url('/images/background.jpg'); background-repeat: no-repeat; height: 250px; margin: -100px 0px 0px 50px;">
+		<div class="panel-heading" align="center" style="margin: 130px 0px 0px 0px;">
+      		<label class="pull-left" style="font-size: 100px; font-family: 'Baskerville Old Face'">Catawba</label>
     	</div>
-        <div class="panel-body" style="margin: 0px 0px 0px -60px;">
+        <div class="panel-body" style="margin: 100px 0px -10px -110px;">
             <% if (error == true) {%>
-            <div class="alert alert-danger" role="alert">
+            <div class="alert alert-danger pull-left" role="alert">
                 <strong>Error! </strong> <%= message %>
             </div>
             <% } else if (alert == true) {%>
-            <div class="alert alert-info" role="alert">
+            <div class="alert alert-info pull-left" role="alert">
                 <strong><%= message %></strong>
             </div>
             <% } %>
-        <table>
+        <table align="bottom" style="margin: -20px 0px 0px 0px">
             <form id="searchForm" action="/getCategory" method="post">
             <td rowspan="2">
                 <select name="categorySelectId" style= "display: block; width: 200px; height: 34px; padding: 6px 12px; font-size: 14px; line-height: 1.42857143; color: #555; background-color: #fff; border: 1px solid #ccc; border-radius: 4px">
@@ -75,7 +75,7 @@
             <td style="padding: 0 0 0 30px">
                 <div id="donateDropDown" class="dropdown">
                     <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown">Donate <span class="glyphicon glyphicon-plus"></span></button>
-                    <form class="dropdown-menu" align="center" style="width: 250px" action="/donate" method="POST">
+                    <form class="dropdown-menu" align="center" style="width: 250px" action="/donate" method="POST" enctype="multipart/form-data">
                         <table>
                             <tr>
                                 <td>
@@ -84,7 +84,7 @@
                                             <img src="/images/Camera.ico" style="width: 100px;cursor: pointer;"/>
                                         </label>
 
-                                        <input id="file-input" type="file" style="display: none;" accept="image/*"/>
+                                        <input id="file-input" name="image" type="file" style="display: none;" accept="image/*"/>
                                     </div>
                                 </td>
                             </tr>
@@ -130,7 +130,13 @@
                     </form>
                 </div>
             </td>
-            <%}%>
+            <%} else if(loggedIn == true){%>
+            <td style="padding: 0 0 0 30px">
+                <form id="requestForm" action="/requestToDonate" method="post">
+                    <button class="btn btn-primary " type="submit">Request to Donate <span class="glyphicon glyphicon-plus"></span></button>
+                </form>
+            </td>
+            <% }%>
             <td style="padding: 0 0 0 30px">
                 <% if (loggedIn == false) { %>
                 <div id="loginDropDown" class="dropdown">
@@ -184,6 +190,7 @@
                             <li><a href="/getMyAccount">My Account</a></li>
                             <% if (user.Role == 'Member' || user.Role == 'Admin') {%>
                                 <li><a href="/getNewItems">New Items</a></li>
+                                <li><a href="/getUsers">Users</a></li>
                             <% } %>
                             <li><a href="/logout">Logout <span class="glyphicon glyphicon-off"></span></a></li>
                         </ul>
